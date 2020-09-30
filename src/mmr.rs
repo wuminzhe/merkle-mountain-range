@@ -39,6 +39,23 @@ impl<'a, T: Clone + PartialEq + Debug, M: Merge<Item = T>, S: MMRStore<T>> MMR<T
         Ok(Cow::Owned(elem))
     }
 
+    pub fn get_elem(&self, pos: u64) -> Result<T> {
+        let elem = self.batch.get_elem(pos)?.ok_or(Error::InconsistentStore)?;
+        Ok(elem)
+    }
+
+    pub fn get_pos_by_elem(&self, elem: &T) -> Result<u64> {
+        let mut pos = 0;
+        for i in 0..self.mmr_size {
+            let e = self.get_elem(i).unwrap();
+            if &e == elem {
+                return Ok(i);
+            }
+        }
+
+        Err(Error::InconsistentStore)
+    }
+
     pub fn mmr_size(&self) -> u64 {
         self.mmr_size
     }
@@ -330,7 +347,7 @@ fn calculate_peak_root<
     Err(Error::CorruptedProof)
 }
 
-fn calculate_peaks_hashes<
+pub fn calculate_peaks_hashes<
     'a,
     T: 'a + PartialEq + Debug + Clone,
     M: Merge<Item = T>,
@@ -385,7 +402,7 @@ fn calculate_peaks_hashes<
     Ok(peaks_hashes)
 }
 
-fn bagging_peaks_hashes<'a, T: 'a + PartialEq + Debug + Clone, M: Merge<Item = T>>(
+pub fn bagging_peaks_hashes<'a, T: 'a + PartialEq + Debug + Clone, M: Merge<Item = T>>(
     mut peaks_hashes: Vec<T>,
 ) -> Result<T> {
     // bagging peaks
